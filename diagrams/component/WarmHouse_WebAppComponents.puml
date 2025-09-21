@@ -1,0 +1,58 @@
+@startuml
+title Диаграмма компонентов контейнера Web-приложение системы  WarmHouse
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+skinparam nodesep 50
+
+System_Boundary(WarmHouseSystem, "WarmHouse") {
+  Container(WebApp, "Monolith WebApplication", "Go, Gin", "Взаимодействует с пользователями и управляет устройствами")
+  together {
+    Container(Database, "Database", "PostgreSQL", "Сохраняет данные об устройствах, данные о пользователях и т.д")
+    Container(broker, "Message Broker", "RabbitMQ", "Асинхронное взаимодействие между сервисами")
+    Container(DeviceManager, "Device Manager", "Java, Spring", "Трансляция команд изменения состояния устройств, запрос текущего состояния")
+    Container(TelemetryCollector, "Telemetry Collector", "Kotlin, Ktor", "Отслеживает и сохраняет изменения датчиков, возвращает значения по api")
+    Container(VideoGateway, "Video Gateway", "Java, Spring", "Получение видео потока с камер")
+  }
+}
+
+Container(WebApp, "Web-приложение") {
+  Component(AuthController, "AuthController", "обработка запросов авторизации")
+  Component(UserController, "UserController", "обработка запросов регистрации пользователей, авторизации, профилей")
+  Component(DashboardController, "DashboardController ", "Обработка запросов получения состояния устройств и телеметрии")
+  Component(ControlPanelController, "ControlPanelController", "обработка команд с панели управления устройствами в UI")
+  Component(DeviceRegisterController, "DeviceRegisterController", "регистрация устройств, привязка к пользователям")
+  Component(WatchVideoController, "WatchVideoController", "Просмотр видео с камер")
+  Component(RuleController, "RuleController", "Обслуживает UI настройки правил автоматизации в зависимости от значений датчиков")
+  Component(RepositoryLayer, "Repository Layer", "Логика доступа к данным")
+  Component(DeviceManagerService, "DeviceManagerService", "Взаимодействие с устройствами")
+  Component(VSSLayer, "VSSService", "Возвращает видео поток")
+  Component(AutomationService, "AutomationService", "Выполнение правил в зависимости от значений датчиков")
+  Component(UserService, "UserService", "регистрация пользователей, работа с профилями, привязка устройств к пользователю")
+  Component(AuthService, "AuthService", "авторизация пользователей")
+  Component(DeviceRegisterService, "DeviceRegisterService", "регистрация устройств, привязка к пользователям")
+}
+
+
+
+Rel(DashboardController, DeviceManagerService, "Вызывает методы")
+Rel(ControlPanelController, DeviceManagerService, "Вызывает методы")
+Rel(DeviceRegisterController, DeviceRegisterService, "Вызывает методы")
+Rel(DeviceRegisterService, RepositoryLayer, "Сохраняет/запрашивает данные")
+Rel(UserController, UserService, "Вызывает методы")
+Rel(RepositoryLayer, Database, "Читает/записывает данные")
+Rel(WatchVideoController, VSSLayer, "Вызывает методы")
+Rel(DeviceManagerService, DeviceManager, "Отправляет команды, запрашивает состояние устройств", "REST")
+Rel(DeviceManagerService, TelemetryCollector, "Запрашивает телеметрию", "gRPC")
+Rel(DeviceManagerService, RepositoryLayer, "Читает параметры устройств")
+Rel(RuleController, AutomationService, "Вызывает методы")
+Rel(AutomationService, RepositoryLayer, "Читает параметры правил")
+Rel(AutomationService, broker, "Подписан на события SensorChanged", "AMQP")
+Rel(VSSLayer, VideoGateway, "Получение live-видео потока", "gRPC")
+Rel(UserService, RepositoryLayer, "Читает/запрашивает данные")
+Rel(AuthService, RepositoryLayer, "Читает/запрашивает данные")
+Rel(AuthController, AuthService, "Вызывает методы")
+
+@enduml

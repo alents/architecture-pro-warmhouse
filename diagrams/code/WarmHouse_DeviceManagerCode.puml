@@ -1,0 +1,54 @@
+@startuml
+title Диаграмма кода сервиса Device Manager
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+class Device {
+  +Long deviceId
+  +String deviceName
+  +DeviceType deviceType
+  +ProtocolType protocolType
+  +String address
+}
+
+class DeviceType {
+    +Integer typeId
+    +String typeName
+}
+
+class ProtocolType {
+    +Integer typeId
+    +String typeName
+}
+
+class ApiService {
+    +DeviceState getDeviceState(String address)
+    +void changeDeviceState(String address, DeviceState state)
+}
+
+interface ProtocolDriver {
+   +DeviceState getDeviceState(String address)
+   +void changeDeviceState(String address, DeviceState state)
+}
+
+class ProtocolFactory {
+   +ProtocolDriver getProtocol(int protocolType)
+}
+
+class DeviceRepository {
+  +Device getById(Long id)
+}
+
+enum DeviceState {
+    ON, OFF
+}
+
+Device "1" --> "1" DeviceType: deviceType
+Device "1" --> "1" ProtocolType: protocolType
+ApiService ..> DeviceRepository
+ApiService ..> ProtocolFactory
+ApiService ..> ProtocolDriver
+
+@enduml

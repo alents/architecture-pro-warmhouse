@@ -1,0 +1,26 @@
+@startuml
+title Диаграмма контейнеров системы WarmHouse
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Person(user, "Клиент", "Пользователь системы")
+Person(admin, "Администратор", "Администратор системы")
+System(WarmHouseSystem, "Система WarmHouse", "Система для удаленного управления отоплением")
+
+System_Boundary(WarmHouseSystem, "WarmHouse System") {
+  Container(WebApp, "Web Application", "Go, Gin", "Взаимодействует с пользователями и датчиками температуры")
+  Container(Database, "Database", "PostgreSQL", "Сохраняет данные с датчиков, данные о пользователях и т.д")
+}
+
+System_Ext(HeatingSystems, "Датчики температуры", "Возвращают текущую температуру, выполняют команды управления отоплением")
+
+Rel(user, WebApp, "Использует систему")
+Rel(admin, WebApp,"Управляет системой")
+Rel(WebApp,Database, "Читает/записывает данные")
+Rel(WebApp,HeatingSystems,"Получает значения датчиков, посылает запросы/команды")
+
+
+
+@enduml

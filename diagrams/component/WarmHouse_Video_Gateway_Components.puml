@@ -1,0 +1,26 @@
+@startuml
+title Диаграмма компонентов контейнера Video Gateway
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+System_Boundary(WarmHouseSystem, "WarmHouse") {
+  Container(VideoGateway, "Video Gateway", "Java, Spring", "Получение видео потока с камер")
+}
+
+Container(VideoGateway, "Video Gateway") {
+  Component(StreamingController, "StreamingController", "Обрабатывает запросы на получение видео потока с камеры")
+  Component(StreamingService, "StreamingService", "Возвращает видео поток с запрошенной камеры")
+  Component(CamerasIntegrationLayer, "Cameras Integration Layer", "Реализации протоколов видео захвата")
+}
+
+System_Ext(Cams, "Системы видеонаблюдения")
+
+
+Rel(StreamingController, StreamingService, "Читает поток")
+Rel(StreamingService, CamerasIntegrationLayer, "Читает поток")
+Rel(CamerasIntegrationLayer, Cams, "Захватывает видео поток", "RTP/UDP")
+
+
+@enduml

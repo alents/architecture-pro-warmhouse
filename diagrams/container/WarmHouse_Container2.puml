@@ -1,0 +1,42 @@
+@startuml
+title Диаграмма контейнеров системы WarmHouse
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Person(user, "Клиент", "Пользователь системы")
+Person(admin, "Администратор", "Администратор системы")
+System(WarmHouseSystem, "Система WarmHouse", "Система для удаленного управления отоплением")
+
+System_Boundary(WarmHouseSystem, "WarmHouse System") {
+  Container(WebApp, "WebApp", "Go, Gin", "Панель управления устройствами, UI телеметрии, UI администратора, автоматизация")
+  Container(TelemetryCapture, "Telemetry Capture", "Java, Spring", "Опрашивает датчики, уведомляет об изменении значений датчиков")
+  Container(TelemetryCollector, "Telemetry Collector", "Kotlin, Ktor", "Отслеживает и сохраняет изменения датчиков, возвращает значения по api")
+  Container(DeviceManager, "Device Manager", "Java, Spring", "Трансляция команд изменения состояния устройств, запрос текущего состояния")
+  Container(broker, "Message Broker", "RabbitMQ", "Асинхронное взаимодействие между сервисами")
+  Container(Database, "Relational Database", "PostgreSQL", "Сохраняет данные об устройствах, данные о пользователях и т.д")
+  Container(TimeSeriesDВ, "Time Series DB", "Victoria Metrics", "Сохраняет показания датчиков")
+  Container(VideoGateway, "Video Gateway", "Java, Spring", "Получение видео потока с камер")
+}
+
+System_Ext(SmartDevices, "Умные устройства", "Датчики, управляемые устройства")
+System_Ext(Cams, "Системы видеонаблюдения")
+
+Rel(user, WebApp, "Использует систему")
+Rel(admin, WebApp,"Управляет системой")
+Rel(WebApp, Database, "Читает/записывает данные")
+Rel(TelemetryCapture, SmartDevices, "Запрашивает значения датчиков", "Native protocols")
+Rel(TelemetryCapture, broker, "Публикация событий SensorChanged", "AMQP")
+Rel(TelemetryCollector, broker, "Подписан на события SensorChanged", "AMQP")
+Rel(WebApp, TelemetryCollector, "Запрашивает телеметрию", "RestAPI")
+Rel(WebApp, DeviceManager, "Отправляет команды, запрашивает состояние устройства", "RestAPI")
+Rel(DeviceManager, SmartDevices, "Отправляет команды, запрашивает состояние устройства", "Native protocols")
+Rel(TelemetryCollector, TimeSeriesDВ, "Читает/записывает показания датчиков")
+Rel(TelemetryCapture, Database, "Получает параметры датчиков для опроса")
+Rel(DeviceManager, Database, "Получает параметры устройств")
+Rel(VideoGateway, Cams, "Захватывает видео поток", "RTP/UDP")
+Rel(WebApp, VideoGateway, "Просмотр live-видео", "gRPC")
+Rel(WebApp, broker, "Подписан на события SensorChanged", "AMQP")
+
+@enduml

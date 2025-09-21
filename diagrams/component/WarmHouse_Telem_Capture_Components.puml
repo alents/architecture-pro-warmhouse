@@ -1,0 +1,35 @@
+@startuml
+title Диаграмма компонентов контейнера Telemetry Capture
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+System_Boundary(WarmHouseSystem, "WarmHouse") {
+  Container(TelemetryCapture, "Telemetry Capture", "Java, Spring", "Опрашивает датчики, уведомляет об изменении значений датчиков")
+  together {
+      Container(Database, "Database", "PostgreSQL", "Сохраняет данные об устройствах (сетевой адрес, тип протокола и т.д.)")
+      Container(broker, "Message Broker", "RabbitMQ", "Асинхронное взаимодействие между сервисами")
+  }
+}
+
+Container(TelemetryCapture, "Telemetry Capture") {
+  Component(SensorPoller, "SensorPoller", "опрос датчиков")
+  Component(Repository, "Repository", "Логика доступа к данным")
+  Component(ProtocolSelector, "ProtocolSelector", "Возвращает реализацию нативного протокола устройства")
+  Component(ProtocolDriversLayer, "Protocol Drivers Layer", "Драйверы протоколов устройства")
+  Component(SensorPublisher, "SensorPublisher", "Публикация значений датчиков")
+}
+
+System_Ext(SmartDevices, "Умные устройства", "Датчики, управляемые устройства")
+
+Rel(ProtocolDriversLayer, SmartDevices, "Запрашивает значения датчиков", "native protocols")
+Rel(SensorPoller, ProtocolSelector, "Вызывает методы")
+Rel(SensorPoller, ProtocolDriversLayer, "Вызывает методы")
+Rel(SensorPoller, Repository, "Читает параметры устройств")
+Rel(Repository, Database, "Читает/записывает данные")
+Rel(SensorPoller, SensorPublisher, "Вызывает методы")
+Rel(SensorPublisher, broker, "Публикация событий SensorChanged", "AMQP")
+
+
+@enduml
