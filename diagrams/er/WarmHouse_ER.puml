@@ -1,0 +1,95 @@
+@startuml
+
+entity User {
+  *id : int
+  --
+  login: string
+  password: string
+  first_name : string
+  middle_name : string
+  last_name: string
+  email: string
+}
+
+entity Role {
+  *id: int
+  --
+  name: string
+}
+
+entity UserRole {
+  +user_id: int
+  +role_id: int
+}
+
+entity House {
+  *id: int
+  --
+  address: string
+}
+
+entity UserHouse {
+  +user_id: int
+  +house_id: int
+}
+
+entity Device {
+  *id: int
+  --
+  +house_id: int
+  +type_id: int
+  +protocol_id: int
+  name: string
+  serial_number: string
+  password: string
+}
+
+entity Sensor {
+  *id: int
+  --
+  measure_unit_id: int
+}
+
+entity DeviceType {
+  *id: int
+  --
+  name: string
+}
+
+entity DeviceProtocol {
+  *id: int
+  --
+  name: string
+}
+
+entity DeviceState {
+  *id: int
+  --
+  +device_id: int
+  state_code: string
+  state_name: string
+}
+
+entity Telemetry {
+  +device_id: int
+  value: float
+  value_time: time
+
+}
+
+User ||--|{ UserRole
+Role ||--o{ UserRole
+
+User ||--|{ UserHouse
+House ||--o{ UserHouse
+
+Device }o--|| DeviceType
+Device }o--|| DeviceProtocol
+
+Device ||--|{ DeviceState
+
+Device |o--|{ Telemetry
+
+Device ||--|| Sensor
+
+@enduml

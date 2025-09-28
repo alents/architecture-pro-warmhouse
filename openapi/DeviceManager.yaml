@@ -1,0 +1,136 @@
+openapi: 3.1.0
+info:
+  title: Описание API микросервиса DeviceManager
+  description: Микросервис транслирует получаемые запросы API в адрес IoT устройств
+  version: 1.0.0
+servers:
+  - url: 'https://localhost:8081'
+paths:
+  /devices/{deviceId}:
+    get:
+      summary: Получить информацию по устройству
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Информация об устройстве
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+              example:
+                  id: 123
+                  name: Модуль освещения во дворе
+                  device_type: light_module
+
+        "404":
+          $ref: "#/components/responses/DeviceNotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /devices/{deviceId}/state:
+    get:
+      summary: Получить состояние устройства
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Состояние устройства
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceState"
+              example:
+                value:
+                  state_code: "ON"
+
+        "404":
+          $ref: "#/components/responses/DeviceNotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      summary: Изменить состояние устройства
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceState"
+            example:
+                state_code: "OFF"
+      responses:
+        "200":
+          description: Установленное состояние устройства
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceState"
+              example:
+                state_code: "OFF"
+        "404":
+          $ref: "#/components/responses/DeviceNotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  schemas:
+    Device:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        device_type:
+          type: string
+    DeviceState:
+      type: object
+      properties:
+        state_code:
+          type: string
+    ErrorInfo:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Код ошибки
+        message:
+          type: string
+          description: Описание ошибки
+  responses:
+    InternalServerError:
+      description: "Ошибка сервера"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorInfo"
+          examples:
+            InternalServerError:
+              value:
+                code: 500
+                message: "Ошибка сервера."
+    DeviceNotFound:
+      description: "Устройство не найдено"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorInfo"
+          examples:
+            DeviceNotFound:
+              summary: Пример ошибки 404 для отсутствующего устройства
+              value:
+                code: 404
+                message: "Устройство '123' не найдено."
