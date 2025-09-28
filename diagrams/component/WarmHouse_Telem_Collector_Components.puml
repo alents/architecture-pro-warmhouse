@@ -1,0 +1,29 @@
+@startuml
+title Диаграмма компонентов контейнера Telemetry Collector
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+System_Boundary(WarmHouseSystem, "WarmHouse") {
+  Container(TelemetryCollector, "Telemetry Collector", "Kotlin, Ktor", "Отслеживает и сохраняет изменения датчиков, возвращает значения по api")
+  together {
+      Container(broker, "Message Broker", "RabbitMQ", "Асинхронное взаимодействие между сервисами")
+      Container(TimeSeriesDВ, "Time Series DB", "Victoria Metrics", "Сохраняет показания датчиков")
+  }
+}
+
+Container(TelemetryCollector, "Telemetry Collector") {
+  Component(ApiController, "ApiController", "Возврат значений датчиков")
+  Component(ApiService, "ApiService", "Возврат значений датчиков")
+  Component(SensorConsumer, "SensorConsumer", "получает уведомления об изменении значений датчиков и сохраняет значения")
+  Component(Repository, "Repository", "Логика доступа к данным")
+}
+
+Rel(ApiController, ApiService, "Вызывает методы")
+Rel(ApiService, Repository, "Запись/чтение данных")
+Rel(Repository, TimeSeriesDВ, "Запись/чтение данных")
+Rel(SensorConsumer, Repository, "Запись данных")
+Rel(SensorConsumer, broker, "Подписан на события SensorChanged", "AMQP")
+
+@enduml

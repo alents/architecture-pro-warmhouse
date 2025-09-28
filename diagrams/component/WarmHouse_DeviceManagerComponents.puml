@@ -1,0 +1,31 @@
+@startuml
+title Диаграмма компонентов контейнера DeviceManagerService
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+System_Boundary(WarmHouseSystem, "WarmHouse") {
+  Container(DeviceManagerService, "Device Manager Service", "Java, Spring", "Трансляция команд изменения состояния устройств, запрос текущего состояния")
+  Container(Database, "Database", "PostgreSQL", "Сохраняет данные об устройствах (сетевой адрес, тип протокола и т.д.)")
+}
+
+Container(DeviceManagerService, "Device Manager Service") {
+  Component(ApiController, "ApiController", "обработчик запросов состояния устройств, изменения состояния")
+  Component(ApiService, "ApiService", "получение состояния устройств, изменения состояния")
+  Component(Repository, "DeviceRepository", "Логика доступа к данным")
+  Component(ProtocolFactory, "ProtocolFactory", "Возвращает реализацию нативного протокола устройства")
+  Component(ProtocolDriversLayer, "Protocol Drivers Layer", "Драйверы протоколов устройства")
+}
+
+System_Ext(SmartDevices, "Умные устройства", "Датчики, управляемые устройства")
+
+Rel(ApiController, ApiService, "Вызывает методы")
+Rel(ProtocolDriversLayer, SmartDevices, "Отправляет команды", "native protocols")
+Rel(ApiService, Repository, "Читает параметры устройств")
+Rel(ApiService, ProtocolFactory, "Вызывает методы")
+Rel(ApiService, ProtocolDriversLayer, "Вызывает методы")
+Rel(Repository, Database, "Читает/записывает данные")
+
+
+@enduml

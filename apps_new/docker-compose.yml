@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smarthome-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./smart_home_new/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - smarthome-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d postgres" ]
+      interval: 30s
+      timeout: 5s
+      retries: 2
+      start_period: 10s
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - smarthome-network
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/
+      - rabbitmq_logs:/var/log/rabbitmq/
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  temperature-api:
+    build: ./smart_home_new/services/temperature-api
+    container_name: temperature-api
+    ports:
+      - "8081:8081"
+    networks:
+      - smarthome-network
+
+  sensor-poller:
+    build: ./smart_home_new/services/sensor-poller
+    container_name: sensor-poller
+    environment:
+      SPRING_SERVER_PORT: $SPRING_SERVER_PORT
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/smarthome
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      TEMPERATURE_SERVICE_URL: http://temperature-api:8081
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      temperature-api:
+        condition: service_started
+    ports:
+      - "$SPRING_SERVER_PORT:$SPRING_SERVER_PORT"
+    networks:
+      - smarthome-network
+
+  telemetry-collector:
+    build: ./smart_home_new/services/telemetry-collector
+    container_name: telemetry-collector
+    ports:
+      - "8082:8082"
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/smarthome
+    depends_on:
+        rabbitmq:
+          condition: service_healthy
+        postgres:
+          condition: service_healthy
+    networks:
+      - smarthome-network
+
+  app:
+    build:
+      context: ./smart_home_new
+      dockerfile: Dockerfile
+    container_name: smarthome-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temperature-api:
+        condition: service_started
+      telemetry-collector:
+        condition: service_started
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/smarthome
+      - TEMPERATURE_API_URL=http://temperature-api:8081
+      - TELEMETRY_API_URL=http://telemetry-collector:8082
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    networks:
+      - smarthome-network
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  rabbitmq_logs:
+
+networks:
+  smarthome-network:
+    driver: bridge

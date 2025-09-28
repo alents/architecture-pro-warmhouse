@@ -1,0 +1,19 @@
+@startuml
+title Диаграмма контекста системы WarmHouse
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+
+Person(user, "Клиент", "Пользователь системы")
+Person(admin, "Администратор", "Администратор системы")
+System(WarmHouseSystem, "Система WarmHouse", "Управление отоплением, мониторинг температуры")
+
+System_Ext(HeatingSystems, "Датчики температуры", "Возвращают текущую температуру, выполняют команды управления отоплением")
+
+Rel(user, WarmHouseSystem, "Использует систему")
+Rel(admin,WarmHouseSystem,"Управляет системой")
+Rel(WarmHouseSystem,HeatingSystems,"Получает значения датчиков, посылает запросы/команды")
+
+@enduml
